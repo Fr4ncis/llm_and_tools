@@ -2,7 +2,7 @@
 
 // index.js: Send a prompt to Ollama API and print the response
 const http = require('http');
-const { toolDefinitions, Calculator, GetCurrentWeather } = require('./tools');
+const { toolDefinitions, Calculator, GetCurrentWeather, GetCurrentDateTime } = require('./tools');
 const yargs = require('yargs/yargs');
 const { hideBin } = require('yargs/helpers');
 let chalk;
@@ -41,13 +41,16 @@ async function callLLM({ model, messages, tools }) {
   const payload = {
     model,
     messages,
-    stream: false
+    stream: false,
+    options: {
+      temperature: 0
+    }
   };
   if (tools) payload.tools = tools;
   const data = JSON.stringify(payload);
 
   // Log the outgoing call
-  console.log(chalk.default.yellowBright.bold('\n[LLM Call]\n') + chalk.default.yellow(data));
+  console.log(chalk.default.yellowBright.bold('\n[LLM Call]\n') + chalk.default.yellowBright(data));
 
   const options = {
     hostname: 'localhost',
@@ -86,6 +89,8 @@ async function executeToolCall(toolCall) {
     return await Calculator.run(args);
   } else if (name === 'get_current_weather') {
     return await GetCurrentWeather.run(args);
+  } else if (name === 'get_current_datetime') {
+    return await GetCurrentDateTime.run();
   } else {
     throw new Error(`Unknown tool: ${name}`);
   }
@@ -107,21 +112,21 @@ async function main() {
 
   while (true) {
     const response = await callLLM({ model, messages, tools });
-    console.log(chalk.default.cyanBright.bold('\n[LLM Response]\n') + chalk.default.cyan(JSON.stringify(response, null, 2)));
+    console.log(chalk.default.blueBright.bold('\n[LLM Response]\n') + chalk.default.blueBright(JSON.stringify(response, null, 2)));
     const assistantMsg = response.message;
     messages.push({ role: 'assistant', content: assistantMsg.content || '', tool_calls: assistantMsg.tool_calls });
 
     if (assistantMsg.tool_calls && assistantMsg.tool_calls.length > 0) {
       // Only handle one tool call at a time for simplicity
       const toolCall = assistantMsg.tool_calls[0];
-      console.log(chalk.default.yellowBright.bold(`\n[Tool Call] Running tool: ${toolCall.function.name}`));
-      console.log(chalk.default.yellow('Arguments:'), chalk.default.yellow(JSON.stringify(toolCall.function.arguments, null, 2)));
+      console.log(chalk.default.hex('#FFA500').bold(`\n[Tool Call] Running tool: ${toolCall.function.name}`));
+      console.log(chalk.default.hex('#FFA500')('Arguments:'), chalk.default.hex('#FFA500')(JSON.stringify(toolCall.function.arguments, null, 2)));
       try {
         const toolResult = await executeToolCall(toolCall);
-        console.log(chalk.default.yellowBright.bold(`[Tool Result] Output:`), chalk.default.yellow(toolResult));
+        console.log(chalk.default.hex('#FFA500').bold(`[Tool Result] Output:`), chalk.default.hex('#FFA500')(toolResult));
         messages.push({ role: 'tool', content: String(toolResult) });
       } catch (err) {
-        console.log(chalk.default.redBright.bold(`[Tool Error]`), chalk.default.red(err.message));
+        console.log(chalk.default.redBright.bold(`[Tool Error]`), chalk.default.redBright(err.message));
         messages.push({ role: 'tool', content: `Error: ${err.message}` });
       }
       // Loop again to send the new message list
@@ -133,7 +138,7 @@ async function main() {
 
   // Print the final assistant response
   const lastMsg = messages[messages.length - 1];
-  console.log(chalk.default.magentaBright.bold('\n[Final Assistant Response]\n') + chalk.default.magenta(lastMsg.content));
+  console.log(chalk.default.magentaBright.bold('\n[Final Assistant Response]\n') + chalk.default.magentaBright(lastMsg.content));
 }
 
 (async () => {

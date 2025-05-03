@@ -24,12 +24,27 @@ class GetCurrentWeather {
   /**
    * Simulates fetching weather for a location (stub).
    * @param {string} location - The location to get the weather for.
-   * @param {string} format - 'celsius' or 'fahrenheit'.
    * @returns {Promise<string>} - Stubbed weather info.
    */
-  static async run({ location, format }) {
+  static async run({ location }) {
     // In a real implementation, call a weather API here.
-    return `Weather for ${location} is 20° ${format} (stubbed)`;
+    return `Weather for ${location} is 75° Fahrenheit`;
+  }
+}
+
+// GetCurrentDateTime tool: returns the current date and time using the 'date' command
+class GetCurrentDateTime {
+  /**
+   * Returns the current date and time using the 'date' command.
+   * @returns {Promise<string>} - The current date and time string.
+   */
+  static async run() {
+    return new Promise((resolve, reject) => {
+      exec('date', (error, stdout, stderr) => {
+        if (error) return reject(stderr || error.message);
+        resolve(stdout.trim());
+      });
+    });
   }
 }
 
@@ -44,16 +59,19 @@ const toolDefinitions = [
         properties: {
           location: {
             type: "string",
-            description: "The location to get the weather for, e.g. San Francisco, CA"
-          },
-          format: {
-            type: "string",
-            description: "The format to return the weather in, e.g. 'celsius' or 'fahrenheit'",
-            enum: ["celsius", "fahrenheit"]
+            description: "The location to get the weather for, e.g. San Francisco, CA in Fahrenheit"
           }
         },
-        required: ["location", "format"]
+        required: ["location"]
       }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "get_current_datetime",
+      description: "Get the current date and time (e.g. 'Sat  3 May 2025 19:33:34 BST')",
+      parameters: {}
     }
   },
   {
@@ -78,5 +96,6 @@ const toolDefinitions = [
 module.exports = {
   Calculator,
   GetCurrentWeather,
+  GetCurrentDateTime,
   toolDefinitions
 };
