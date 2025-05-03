@@ -26,6 +26,11 @@ const argv = yargs(hideBin(process.argv))
     description: 'Model to use (e.g. qwen3:4b, qwen3:8b)',
     default: 'qwen3:4b'
   })
+  .option('tools', {
+    alias: 't',
+    type: 'string',
+    description: 'Comma-separated list of tool names to enable (e.g. calculator,get_current_weather)'
+  })
   .help()
   .argv;
 
@@ -33,12 +38,16 @@ const prompt = argv.prompt;
 const model = argv.model;
 
 async function callLLM({ model, messages, tools }) {
-  const data = JSON.stringify({
+  const payload = {
     model,
     messages,
-    stream: false,
-    tools
-  });
+    stream: false
+  };
+  if (tools) payload.tools = tools;
+  const data = JSON.stringify(payload);
+
+  // Log the outgoing call
+  console.log(chalk.default.yellowBright.bold('\n[LLM Call]\n') + chalk.default.yellow(data));
 
   const options = {
     hostname: 'localhost',
@@ -86,7 +95,15 @@ async function main() {
   let messages = [
     { role: 'user', content: prompt }
   ];
-  let tools = toolDefinitions;
+  // Determine which tools to use
+  let tools;
+  if (argv.tools) {
+    const requestedTools = argv.tools.split(',').map(s => s.trim()).filter(Boolean);
+    tools = toolDefinitions.filter(td => requestedTools.includes(td.function.name));
+    if (tools.length === 0) tools = undefined; // If none matched, don't send tools
+  } else {
+    tools = undefined; // No tools property unless specified
+  }
 
   while (true) {
     const response = await callLLM({ model, messages, tools });
@@ -101,7 +118,7 @@ async function main() {
       console.log(chalk.default.yellow('Arguments:'), chalk.default.yellow(JSON.stringify(toolCall.function.arguments, null, 2)));
       try {
         const toolResult = await executeToolCall(toolCall);
-        console.log(chalk.default.greenBright.bold(`[Tool Result] Output:`), chalk.default.green(toolResult));
+        console.log(chalk.default.yellowBright.bold(`[Tool Result] Output:`), chalk.default.yellow(toolResult));
         messages.push({ role: 'tool', content: String(toolResult) });
       } catch (err) {
         console.log(chalk.default.redBright.bold(`[Tool Error]`), chalk.default.red(err.message));
