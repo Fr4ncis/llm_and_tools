@@ -9,9 +9,19 @@ class Calculator {
    */
   static run({ expression }) {
     return new Promise((resolve, reject) => {
-      // Escape single quotes in the expression
-      const safeExpr = expression.replace(/'/g, "'\\''");
-      exec(`bc -l -e '${safeExpr}'`, (error, stdout, stderr) => {
+      let cmd;
+      if (process.platform === 'linux') {
+        // Use echo "expression" | bc -l
+        // Escape double quotes in the expression
+        const safeExpr = expression.replace(/"/g, '\"');
+        cmd = `echo "${safeExpr}" | bc -l`;
+      } else {
+        // Default to macOS style: bc -l -e 'expression'
+        // Escape single quotes in the expression
+        const safeExpr = expression.replace(/'/g, "'\\''");
+        cmd = `bc -l -e '${safeExpr}'`;
+      }
+      exec(cmd, (error, stdout, stderr) => {
         if (error) return reject(stderr || error.message);
         resolve(stdout.trim());
       });

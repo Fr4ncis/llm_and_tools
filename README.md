@@ -1,6 +1,6 @@
-## What does this code do
+## What is this?
 
-This sends a prompt to Ollama API, passes tools, calls them and returns the content as needed, prints the process and final response on the console.
+A lightweight Node.js CLI app that interacts with the Ollama API, supports custom tool use (like calculators or weather fetchers), and logs the reasoning and response flow directly in the console.
 
 ## How to run
 
