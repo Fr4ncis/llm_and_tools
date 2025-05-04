@@ -105,7 +105,7 @@ async function main() {
   if (argv.tools) {
     const requestedTools = argv.tools.split(',').map(s => s.trim()).filter(Boolean);
     tools = toolDefinitions.filter(td => requestedTools.includes(td.function.name));
-    if (tools.length === 0) tools = undefined; // If none matched, don't send tools
+    // Do not unset tools after the first call; keep it for all subsequent calls
   } else {
     tools = undefined; // No tools property unless specified
   }
